@@ -1,27 +1,41 @@
 name: Build Android APK
-on: [push, pull_request] # سيبدأ البناء تلقائياً عند كل "Push" للكود
+on: [push, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Get Date
-        id: get-date
-        run: |
-          echo "::set-output name=date::$(date +'%Y-%m-%d')"
-        shell: bash
-
-      - name: Buildozer Action
-        uses: ArtemSBulgakov/buildozer-action@v1
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          buildozer_version: master
-          command: buildozer android debug
-          repository_display_name: "Ibrahim Al-Malsi Zamil"
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.33
+
+      - name: Fix Aidl Error
+        run: |
+          # تثبيت أدوات البناء التي تحتوي على aidl وتحديد مسارها
+          sudo apt-get install -y google-android-build-tools-33-installer || true
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+
+      - name: Build with Buildozer
+        run: |
+          # استخدام 'yes' للموافقة التلقائية على تراخيص SDK
+          yes | buildozer -v android debug
+        env:
+          ACCEPT_SDK_LICENSE: "yes"
 
       - name: Upload APK
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: package
+          name: ZamilApp
           path: bin/*.apk
