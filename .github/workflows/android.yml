@@ -1,0 +1,27 @@
+name: Build Android APK
+on: [push, pull_request] # سيبدأ البناء تلقائياً عند كل "Push" للكود
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "::set-output name=date::$(date +'%Y-%m-%d')"
+        shell: bash
+
+      - name: Buildozer Action
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          buildozer_version: master
+          command: buildozer android debug
+          repository_display_name: "Ibrahim Al-Malsi Zamil"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v2
+        with:
+          name: package
+          path: bin/*.apk
